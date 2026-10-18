@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#050a1a">
+<title>Slowed + Reverb</title>
+<link rel="apple-touch-icon" href="icon.png">
+<link rel="icon" href="icon.png">
+<style>
+:root{--bg:#050a1a;--panel:rgba(10,20,46,.62);--fg:#e8f1ff;--mut:#8ea8cf;--acc:#5aa9ff;--line:rgba(120,170,255,.2);color-scheme:dark;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+html{height:100%;scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;min-height:100%;background:var(--bg);color:var(--fg);font:16px/1.4 ui-rounded,"SF Pro Rounded",system-ui,-apple-system,"Segoe UI",sans-serif}
+[hidden]{display:none!important}
+main{position:relative;max-width:440px;margin:0 auto;padding:20px 20px 36px;display:flex;flex-direction:column;gap:20px}
+h1{font-size:22px;margin:0;font-weight:700;letter-spacing:-.01em}
+.disc{--glow:.4;--spin:3.3s;width:min(68vw,270px);aspect-ratio:1;margin:6px auto;border-radius:50%;position:relative;background-color:#0a1530;background-image:repeating-radial-gradient(circle,rgba(255,255,255,.07) 0 1px,transparent 1px 4px);box-shadow:0 0 calc(var(--glow)*70px) calc(var(--glow)*14px) color-mix(in srgb,var(--acc) 55%,transparent);animation:spin var(--spin) linear infinite;animation-play-state:paused;transition:box-shadow .3s}
+.disc::after{content:"";position:absolute;inset:34%;border-radius:50%;background:radial-gradient(circle at 50% 50%,#050a1a 0 7%,var(--acc) 8%)}
+.disc.on{animation-play-state:running}
+@keyframes spin{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.disc{animation:none}}
+#name{text-align:center;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.card{background:var(--panel);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border:1px solid var(--line);border-radius:18px;padding:16px;display:flex;flex-direction:column;gap:14px}
+.row{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.row span:last-child{color:var(--mut);font-variant-numeric:tabular-nums;font-size:14px}
+input[type=range]{width:100%;margin:6px 0 0;accent-color:var(--acc)}
+.sk .row{font-size:13px;color:var(--mut)}
+.ctl{display:flex;justify-content:center;align-items:center;gap:22px}
+#play{width:64px;height:64px;border-radius:50%;border:0;background:var(--acc);display:grid;place-items:center;cursor:pointer}
+#play svg{width:28px;height:28px;fill:var(--bg)}
+.skip{width:44px;height:44px;border-radius:50%;border:1px solid var(--line);background:transparent;display:grid;place-items:center;cursor:pointer}
+.skip svg{width:20px;height:20px;fill:var(--fg)}
+button:disabled{opacity:.35;cursor:default}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{border:1px solid var(--line);background:transparent;color:var(--fg);border-radius:999px;padding:9px 15px;font:inherit;font-size:14px;cursor:pointer}
+.chip[aria-pressed=true]{background:var(--acc);border-color:var(--acc);color:var(--bg)}
+.pick{display:block;text-align:center;border:1.5px dashed var(--line);border-radius:14px;padding:14px;color:var(--fg);cursor:pointer;font-weight:600}
+.q{display:flex;flex-direction:column;gap:2px;max-height:42vh;overflow-y:auto}
+.qi{display:flex;align-items:center;gap:2px;padding-left:10px;border-radius:10px}
+.qi.cur{background:color-mix(in srgb,var(--acc) 18%,transparent)}
+.qt{flex:1;min-width:0;background:none;border:0;color:var(--fg);font:inherit;font-size:15px;text-align:left;padding:10px 0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer}
+.qb{width:38px;height:38px;border:0;background:none;color:var(--mut);font-size:16px;cursor:pointer}
+.link{background:none;border:0;color:var(--acc);font:inherit;font-size:14px;cursor:pointer;padding:0}
+:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+.note{color:var(--mut);font-size:13px;text-align:center;margin:0}
+.bg{position:fixed;inset:0;z-index:-1;overflow:hidden;pointer-events:none;background:linear-gradient(120deg,#02050f,#06173a 30%,#0b3a7a 55%,#06173a 80%,#02050f);background-size:300% 300%;animation:shift 24s ease-in-out infinite alternate}
+@keyframes shift{to{background-position:100% 50%}}
+.w{position:absolute;left:0;bottom:0;width:200%;animation:drift var(--t,20s) linear infinite}
+.w svg{display:block;width:100%;height:100%}
+@keyframes drift{to{transform:translateX(-50%)}}
+.w1{height:48vh;--t:24s}.w1 path{fill:rgba(30,110,255,.16)}
+.w2{height:38vh;--t:16s;animation-direction:reverse}.w2 path{fill:rgba(80,175,255,.13)}
+.w3{height:27vh;--t:11s}.w3 path{fill:rgba(20,75,200,.28)}
+@media (prefers-reduced-motion:reduce){.bg,.w{animation:none}}
+</style>
+</head>
+<body>
+<div class="bg" aria-hidden="true"><div class="w w1"><svg viewBox="0 0 2400 200" preserveAspectRatio="none"><path d="M0 100C200 30 400 30 600 100S1000 170 1200 100C1400 30 1600 30 1800 100S2200 170 2400 100V200H0Z"/></svg></div><div class="w w2"><svg viewBox="0 0 2400 200" preserveAspectRatio="none"><path d="M0 100C200 30 400 30 600 100S1000 170 1200 100C1400 30 1600 30 1800 100S2200 170 2400 100V200H0Z"/></svg></div><div class="w w3"><svg viewBox="0 0 2400 200" preserveAspectRatio="none"><path d="M0 100C200 30 400 30 600 100S1000 170 1200 100C1400 30 1600 30 1800 100S2200 170 2400 100V200H0Z"/></svg></div></div>
+<main>
+<h1>Slowed + Reverb</h1>
+<div class="disc" id="disc"></div>
+<div id="name">Add songs from your phone</div>
+
+<label class="pick" for="file">Add songs (MP3, WAV or M4A)</label>
+<input type="file" id="file" accept=".mp3,.wav,.m4a,audio/mpeg,audio/wav,audio/x-wav,audio/mp4,audio/x-m4a" multiple hidden>
+
+<div class="card">
+  <div class="sk">
+    <input type="range" id="seek" min="0" max="1" step="any" value="0" aria-label="Seek">
+    <div class="row"><span id="cur">0:00</span><span id="dur">0:00</span></div>
+  </div>
+  <div class="ctl">
+    <button class="skip" id="prev" aria-label="Previous" disabled><svg viewBox="0 0 24 24"><path d="M6 6h2v12H6zm3.5 6 8.5 6V6z"/></svg></button>
+    <button id="play" aria-label="Play" disabled><svg viewBox="0 0 24 24"><path id="ic" d="M8 5v14l11-7z"/></svg></button>
+    <button class="skip" id="next" aria-label="Next" disabled><svg viewBox="0 0 24 24"><path d="M6 18l8.5-6L6 6zM16 6h2v12h-2z"/></svg></button>
+  </div>
+  <div class="chips">
+    <button class="chip" data-p="0.85,40,3">Slowed</button>
+    <button class="chip" data-p="0.75,60,5">Deep slow</button>
+    <button class="chip" data-p="1.25,20,2">Nightcore</button>
+    <button class="chip" id="loop" aria-pressed="false">Loop song</button>
+  </div>
+</div>
+
+<div class="card" id="qcard" hidden>
+  <div class="row"><span id="qn">Queue</span><button class="link" id="clr">Clear all</button></div>
+  <div class="q" id="q"></div>
+</div>
+
+<div class="card">
+  <div><div class="row"><span>Speed</span><span id="vs"></span></div><input type="range" id="speed" min="0.5" max="1.5" step="0.01" value="0.85"></div>
+  <div><div class="row"><span>Reverb</span><span id="vm"></span></div><input type="range" id="mix" min="0" max="100" step="1" value="40"></div>
+  <div><div class="row"><span>Room size</span><span id="vr"></span></div><input type="range" id="room" min="1" max="8" step="0.5" value="3"></div>
+</div>
+<p class="note">Slowing a track also lowers its pitch, which gives the classic sound. Nothing is uploaded; audio stays on your phone. Your queue clears when you close the page.</p>
+</main>
+<script>
+const $=s=>document.querySelector(s);
+let ctx,buf,src,input,dry,wet,conv,lp,master;
+let offset=0,startedAt=0,playing=false,loop=false,rate=0.85,seeking=false;
+let queue=[],qi=-1;
+const fmt=t=>{t=Math.max(0,t|0);return(t/60|0)+':'+String(t%60).padStart(2,'0')};
+
+function init(){
+  if(ctx)return;
+  try{navigator.audioSession.type='playback';}catch(e){}
+  ctx=new(window.AudioContext||window.webkitAudioContext)();
+  input=ctx.createGain();dry=ctx.createGain();wet=ctx.createGain();master=ctx.createGain();
+  lp=ctx.createBiquadFilter();lp.type='lowpass';lp.frequency.value=3500;
+  input.connect(dry);dry.connect(master);
+  lp.connect(wet);wet.connect(master);master.connect(ctx.destination);
+  buildIR();applyMix();
+  if('mediaSession' in navigator){
+    const h=(a,f)=>{try{navigator.mediaSession.setActionHandler(a,f)}catch(e){}};
+    h('play',play);h('pause',pause);h('previoustrack',prev);h('nexttrack',next);
+  }
+}
+function buildIR(){
+  const sec=+$('#room').value,sr=ctx.sampleRate,len=Math.floor(sr*sec);
+  const ir=ctx.createBuffer(2,len,sr);
+  for(let c=0;c<2;c++){const d=ir.getChannelData(c);for(let i=0;i<len;i++)d[i]=(Math.random()*2-1)*Math.pow(1-i/len,3);}
+  const nc=ctx.createConvolver();nc.buffer=ir;
+  if(conv){input.disconnect(conv);conv.disconnect();}
+  input.connect(nc);nc.connect(lp);conv=nc;
+}
+function applyMix(){
+  if(!ctx)return;
+  const m=$('#mix').value/100;
+  dry.gain.value=1-m*0.4;wet.gain.value=m*1.5;
+}
+function pos(){
+  if(!buf)return 0;
+  let p=playing?offset+(ctx.currentTime-startedAt)*rate:offset;
+  if(loop&&p>=buf.duration)p%=buf.duration;
+  return Math.min(p,buf.duration);
+}
+function stopSrc(){
+  if(src){src.onended=null;try{src.stop()}catch(e){}src.disconnect();src=null;}
+}
+function play(){
+  init();
+  if(ctx.state!=='running')ctx.resume();
+  if(!buf)return;
+  stopSrc();
+  if(offset>=buf.duration)offset=0;
+  const me=ctx.createBufferSource();
+  me.buffer=buf;me.playbackRate.value=rate;me.loop=loop;me.connect(input);
+  me.onended=()=>{if(src===me){src=null;playing=false;offset=0;if(qi<queue.length-1)go(qi+1,true);else ui();}};
+  src=me;me.start(0,offset);startedAt=ctx.currentTime;playing=true;ui();
+}
+function pause(){offset=pos();stopSrc();playing=false;ui();}
+function ui(){
+  $('#ic').setAttribute('d',playing?'M6 5h4v14H6zM14 5h4v14h-4z':'M8 5v14l11-7z');
+  $('#play').setAttribute('aria-label',playing?'Pause':'Play');
+  $('#play').disabled=!buf;
+  $('#prev').disabled=$('#next').disabled=!queue.length;
+  $('#disc').classList.toggle('on',playing);
+  if('mediaSession' in navigator)navigator.mediaSession.playbackState=playing?'playing':'paused';
+}
+async function decodeAt(i){
+  const t=queue[i];
+  if(!t.buf)t.buf=await ctx.decodeAudioData(await t.file.arrayBuffer());
+  return t.buf;
+}
+async function go(i,auto){
+  if(i<0||i>=queue.length)return;
+  init();
+  if(ctx.state!=='running')ctx.resume();
+  stopSrc();playing=false;offset=0;buf=null;qi=i;
+  $('#name').textContent='Loading…';ui();renderQ();
+  let b;
+  try{b=await decodeAt(i);}
+  catch(e){
+    if(qi!==i)return;
+    $('#name').textContent='Couldn’t read '+queue[i].name;
+    if(auto&&queue[i+1])go(i+1,true);
+    return;
+  }
+  if(qi!==i)return;
+  buf=b;
+  queue.forEach((t,k)=>{if(k!==i&&k!==i+1)t.buf=null;});
+  $('#name').textContent=queue[i].name;
+  $('#seek').max=buf.duration;$('#seek').value=0;
+  $('#dur').textContent=fmt(buf.duration);$('#cur').textContent='0:00';
+  if('mediaSession' in navigator){try{navigator.mediaSession.metadata=new MediaMetadata({title:queue[i].name,artist:'Slowed + Reverb'});}catch(e){}}
+  ui();
+  if(auto)play();
+  if(queue[i+1])decodeAt(i+1).catch(()=>{});
+}
+function next(){if(qi<queue.length-1)go(qi+1,playing);}
+function prev(){
+  if(pos()>3||qi<1){offset=0;if(playing)play();}
+  else go(qi-1,playing);
+}
+function blank(){
+  stopSrc();playing=false;buf=null;offset=0;qi=-1;
+  $('#name').textContent='Add songs from your phone';
+  $('#cur').textContent=$('#dur').textContent='0:00';$('#seek').value=0;
+  renderQ();ui();
+}
+function rm(k){
+  const cur=k===qi;
+  queue.splice(k,1);
+  if(!queue.length){blank();return;}
+  if(cur)go(Math.min(k,queue.length-1),false);
+  else{if(k<qi)qi--;renderQ();}
+}
+function up(k){
+  [queue[k-1],queue[k]]=[queue[k],queue[k-1]];
+  if(qi===k)qi=k-1;else if(qi===k-1)qi=k;
+  renderQ();
+}
+function renderQ(){
+  const q=$('#q');q.textContent='';
+  $('#qcard').hidden=!queue.length;
+  $('#qn').textContent='Queue ('+queue.length+')';
+  queue.forEach((t,k)=>{
+    const r=document.createElement('div');r.className='qi'+(k===qi?' cur':'');
+    const n=document.createElement('button');n.className='qt';n.textContent=(k+1)+'. '+t.name;n.onclick=()=>go(k,true);
+    r.append(n);
+    if(k>0){const u=document.createElement('button');u.className='qb';u.textContent='↑';u.setAttribute('aria-label','Move up');u.onclick=()=>up(k);r.append(u);}
+    const x=document.createElement('button');x.className='qb';x.textContent='✕';x.setAttribute('aria-label','Remove');x.onclick=()=>rm(k);r.append(x);
+    q.append(r);
+  });
+}
+function labels(){
+  const r=+$('#speed').value,st=12*Math.log2(r);
+  $('#vs').textContent=r.toFixed(2)+'× ('+(st>=0?'+':'−')+Math.abs(st).toFixed(1)+' semitones)';
+  $('#vm').textContent=$('#mix').value+'%';
+  $('#vr').textContent=$('#room').value+' s';
+  $('#disc').style.setProperty('--spin',(2.8/r).toFixed(2)+'s');
+  $('#disc').style.setProperty('--glow',($('#mix').value/100).toFixed(2));
+}
+function setRate(r){
+  const p=pos();rate=r;
+  if(playing&&src){offset=p;startedAt=ctx.currentTime;src.playbackRate.value=r;}
+  labels();
+}
+$('#speed').oninput=e=>setRate(+e.target.value);
+$('#mix').oninput=()=>{applyMix();labels();};
+$('#room').oninput=labels;
+$('#room').onchange=()=>{if(ctx)buildIR();};
+$('#play').onclick=()=>playing?pause():play();
+$('#prev').onclick=prev;$('#next').onclick=next;
+$('#clr').onclick=()=>{queue=[];blank();};
+$('#loop').onclick=e=>{loop=!loop;e.target.setAttribute('aria-pressed',loop);if(src)src.loop=loop;};
+$('#seek').oninput=e=>{seeking=true;$('#cur').textContent=fmt(+e.target.value);};
+$('#seek').onchange=e=>{offset=+e.target.value;seeking=false;if(playing)play();};
+document.querySelectorAll('[data-p]').forEach(b=>b.onclick=()=>{
+  const[s,m,r]=b.dataset.p.split(',');
+  $('#speed').value=s;$('#mix').value=m;$('#room').value=r;
+  setRate(+s);applyMix();labels();if(ctx)buildIR();
+});
+$('#file').onchange=e=>{
+  const fs=[...e.target.files].filter(f=>/\.(mp3|wav|m4a)$/i.test(f.name));
+  e.target.value='';
+  if(!fs.length)return;
+  init();
+  const first=queue.length;
+  fs.forEach(f=>queue.push({name:f.name.replace(/\.[^.]+$/,''),file:f,buf:null}));
+  renderQ();
+  if(qi<0)go(first,false);else ui();
+};
+setInterval(()=>{
+  if(!buf)return;
+  const p=pos();$('#cur').textContent=fmt(p);
+  if(!seeking)$('#seek').value=p;
+},250);
+labels();ui();
+</script>
+</body>
+</html>
